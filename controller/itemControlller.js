@@ -4,7 +4,8 @@ const addItem = async (req, res) => {
   try {
     const { itemName, itemPrice, itemDiscription } = req.body;
 
-    const img = `localhost:7000/${req.file.destination}/${req.file.filename}`;
+    // const img = `localhost:7000/${req.file.destination}/${req.file.filename}`;
+    const img = `${req.file.destination}/${req.file.filename}`;
 
     const createItem = new item({
       itemName,
@@ -38,6 +39,35 @@ const getItemById = async (req, res) => {
         message: "Item not found",
       });
     }
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
+};
+
+const updateItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { itemName, itemPrice, itemDiscription } = req.body;
+    console.log(req.body, "===============>");
+    const product = await item.findByIdAndUpdate(
+      id,
+      { itemName, itemPrice, itemDiscription },
+      { new: true }
+    );
+    // if (product) {
+    //   const updatedProduct = await product.save()
+    res.status(201).json({
+      message: "product successfully updated",
+      updatedProduct: product,
+    });
+    // }
+    // else {
+    //   return res.status(404).json({
+    //     message: "product not found",
+    //   });
+    // }
   } catch (error) {
     res.status(400).json({
       message: error.message,
@@ -89,4 +119,5 @@ module.exports = {
   getItemById,
   getAllItem,
   deleteItem,
+  updateItem,
 };
