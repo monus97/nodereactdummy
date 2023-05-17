@@ -51,27 +51,26 @@ const updateItem = async (req, res) => {
     const { id } = req.params;
     const { itemName, itemPrice, itemDiscription } = req.body;
     console.log(req.body, "===============>");
-    const product = await item.findByIdAndUpdate(
-      id,
-      { itemName, itemPrice, itemDiscription },
-      { new: true }
-    );
-    // if (product) {
-    //   const updatedProduct = await product.save()
+    const payload = {
+      itemName,
+      itemPrice,
+      itemDiscription,
+    };
+    if (req.file) {
+      const img = `${req.file.destination}/${req.file.filename}`;
+      payload.images = img;
+    }
+
+    const product = await item.findByIdAndUpdate(id, payload, { new: true });
+    if (!product) {
+      throw new Error("something went wrong");
+    }
     res.status(201).json({
       message: "product successfully updated",
       updatedProduct: product,
     });
-    // }
-    // else {
-    //   return res.status(404).json({
-    //     message: "product not found",
-    //   });
-    // }
   } catch (error) {
-    res.status(400).json({
-      message: error.message,
-    });
+    throw new Error(error.message);
   }
 };
 const deleteItem = async (req, res) => {
@@ -114,10 +113,34 @@ const getAllItem = async (req, res) => {
   }
 };
 
+const searchProduct = async (req, res) => {
+  try {
+    const itemName = req.params.itemName;
+    const query = {itemName:{$regex : itemName ,$options : "i"}}
+  
+    const product = await item.find(query );
+    if (product) {
+        res.status(200).json(
+          product
+        )
+    }else{
+      return res.status(404).json({
+        message: "Item not found",
+      })
+    }
+} catch (error) {
+    res.status(400).json({
+      message : error.message
+    })
+  } 
+
+};
+
 module.exports = {
   addItem,
   getItemById,
   getAllItem,
   deleteItem,
   updateItem,
+  searchProduct,
 };

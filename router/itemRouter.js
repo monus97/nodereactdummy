@@ -10,7 +10,8 @@ router.route("/item")
 router.route('/item/:id')
 .get(item.getItemById)
 .delete(item.deleteItem)
-.put(item.updateItem)
+.put(upload.single('images'),item.updateItem)
 router
 
+router.get('/search/:itemName',item.searchProduct)
 module.exports = router;
