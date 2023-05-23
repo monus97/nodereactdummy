@@ -3,8 +3,6 @@ const item = require("../models/itemModel");
 const addItem = async (req, res) => {
   try {
     const { itemName, itemPrice, itemDiscription } = req.body;
-
-    // const img = `localhost:7000/${req.file.destination}/${req.file.filename}`;
     const img = `${req.file.destination}/${req.file.filename}`;
 
     const createItem = new item({
@@ -31,7 +29,6 @@ const getItemById = async (req, res) => {
     const product = await item.findById(id);
     if (product) {
       res.status(201).json({
-        message: "Item found",
         product,
       });
     } else {
@@ -116,24 +113,21 @@ const getAllItem = async (req, res) => {
 const searchProduct = async (req, res) => {
   try {
     const itemName = req.params.itemName;
-    const query = {itemName:{$regex : itemName ,$options : "i"}}
-  
-    const product = await item.find(query );
+    const query = { itemName: { $regex: itemName, $options: "i" } };
+
+    const product = await item.find(query);
     if (product) {
-        res.status(200).json(
-          product
-        )
-    }else{
+      res.status(200).json(product);
+    } else {
       return res.status(404).json({
         message: "Item not found",
-      })
+      });
     }
-} catch (error) {
+  } catch (error) {
     res.status(400).json({
-      message : error.message
-    })
-  } 
-
+      message: error.message,
+    });
+  }
 };
 
 module.exports = {

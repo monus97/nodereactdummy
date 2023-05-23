@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
-const itemSchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema({
   itemName: {
     type: String,
   },
   itemPrice : {
-    type : String,
+    type : Number,
   },
   itemDiscription : {
     type : String,
@@ -13,5 +13,5 @@ const itemSchema = new mongoose.Schema({
     type : String,
   }
 });
-itemSchema.set('timestamps',true);
-module.exports = mongoose.model('Item',itemSchema)
+
+module.exports = mongoose.model('Item',productSchema)

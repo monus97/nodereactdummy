@@ -1,12 +1,25 @@
 const user = require("../models/register");
+const jwt = require("jsonwebtoken");
+const secure = require("../bcrypt/bcrypt");
+const bcrypt = require("bcrypt");
 
 const userRegister = async (req, res) => {
   try {
     const newUser = new user(req.body);
-    const User = await newUser.save();
-    res.status(201).json({
-      message: User,
-    });
+    const oldUser = await user.findOne({ email: req.body.email });
+    if (!oldUser) {
+      newUser.profilePic = `${req.file.destination}/${req.file.filename}`;
+
+      newUser.password = await secure(newUser.password);
+      const User = await newUser.save();
+      res.status(201).json({
+        message: User,
+      });
+    } else {
+      res.status(409).json({
+        message: "user Already exits please login",
+      });
+    }
   } catch (error) {
     res.status(400).json({
       message: error.message,
@@ -59,7 +72,16 @@ const UserDelete = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedUser = await user.findByIdAndUpdate(id, req.body, {
+    const { name, email } = req.body;
+    const payload = {
+      name,
+      email,
+    };
+    if (req.file) {
+      const img = `${req.file.destination}/${req.file.filename}`;
+      payload.profilePic = img;
+    }
+    const updatedUser = await user.findByIdAndUpdate(id, payload, {
       new: true,
     });
 
@@ -81,19 +103,43 @@ const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (email && password) {
-      const userdetails = await user.findOne({ email: email });
+      const userdetails = await user
+        .findOne({ email: email })
+        .select("+password");
+      const isMatch = await bcrypt.compare(
+        req.body.password,
+        userdetails.password
+      );
+
       if (!userdetails) {
         return res.status(400).json({
           message: "email not found",
         });
-      } else if (userdetails.password != password) {
+      } else if (!isMatch) {
         return res.status(400).json({
           message: "password incorrect",
         });
       } else {
-        res.status(200).json({
-          user: userdetails,
-        });
+        if (userdetails.role === "admin") {
+          userdetails.password = undefined;
+          const token = jwt.sign({ id: userdetails._id }, process.env.JWT_KEY, {
+            expiresIn: "30d",
+          });
+          res.status(200).json({
+            message: "welcome admin",
+            user: userdetails,
+            token: token,
+          });
+        } else {
+          userdetails.password = undefined;
+          const token = jwt.sign({ id: userdetails._id }, process.env.JWT_KEY, {
+            expiresIn: "3h",
+          });
+          res.status(200).json({
+            user: userdetails,
+            token: token,
+          });
+        }
       }
     } else {
       return res.status(400).json({
