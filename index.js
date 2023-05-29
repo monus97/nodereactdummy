@@ -3,6 +3,8 @@ require("./models/config");
 
 const express = require("express");
 const app = express();
+const helmet = require('helmet');
+const logger = require('morgan');
 
 const cartRouter = require("./router/cartRouter");
 const itemRouter = require("./router/itemRouter");
@@ -23,6 +25,12 @@ app.use(mongoSanitize());
 app.use("/", itemRouter);
 app.use("/", UserRouter);
 app.use("/", cartRouter);
+
+app.use(helmet())
+
+// Logger
+
+app.use(logger('common'))
 
 app.all("*", (req, res, next) => {
   res.status(`Can't find ${req.originalUrl} on this server!`, 404);

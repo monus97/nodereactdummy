@@ -11,5 +11,7 @@ router.get("/details", user.getUser);
 router.get("/details/:id", user.getUserById);
 router.delete("/userdelete/:id", user.UserDelete);
 router.put("/update/:id",upload.single('profilePic'), user.updateUser);
+router.post('/verifyOtp',user.verifyOtp)
+router.post('/resendOtp',user.resendOtp)
 
 module.exports = router;
