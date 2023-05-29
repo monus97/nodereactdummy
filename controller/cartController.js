@@ -3,8 +3,9 @@ const Item = require("../models/itemModel");
 const getCart = async (req, res) => {
   try {
     const userId = req.user._id;
-    const cart = await Cart.findOne({ userId });
-    console.log(cart, "...........");
+    const cart = await Cart.findOne({ userId }).populate(
+      "items.productId",{itemName : 1,images : 1,itemPrice : 1}
+    );
     if (cart && cart.items.length > 0) {
       res.status(200).send(cart);
     } else {
