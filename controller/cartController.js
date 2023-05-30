@@ -119,9 +119,10 @@ const removeItemsFromCart = async (req, res) => {
     } else {
       return res.status(404).send("Cart not found");
     }
-  } catch (error) {
-    console.error(error.message); // Log the error message
-    return res.status(500).send("An error occurred");
+  } catch (error) { // Log the error message
+    return res.status(500).send({
+      message: error.message,
+    });
   }
 };
 module.exports = {

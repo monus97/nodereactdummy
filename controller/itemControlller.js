@@ -92,7 +92,7 @@ const deleteItem = async (req, res) => {
 
 const getAllItem = async (req, res) => {
   try {
-    const product = await item.find({});
+    const product = await item.find({}).sort({ _id: -1 });
     if (product) {
       res.status(201).json({
         message: "all item",
