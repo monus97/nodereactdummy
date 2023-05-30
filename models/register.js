@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
   otpExpires: {
     type: Date,
   },
+  otpResendCount: {
+    type: Number,
+    default: 0,
+  },
+  otpCooldown: Date,
 });
 userSchema.set("timestamps", true);
 module.exports = mongoose.model("user", userSchema);

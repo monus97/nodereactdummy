@@ -72,31 +72,177 @@ const resendOtp = async (req, res) => {
     if (!email) {
       return res.status(401).json({ message: "Please provide email" });
     }
-    const OTP = generateOTP();
     const User = await user.findOne({ email });
     if (!User) {
       return res.status(401).json({ message: "Invalid email" });
     }
+
+    // Check if the user has exceeded the maximum resend attempts
+    if (User.otpResendCount >= 5) {
+      await user.findByIdAndDelete(User);
+      return res
+        .status(401)
+        .json({
+          message: "Maximum resend attempts exceeded please register again",
+        });
+    }
+
+    const OTP = generateOTP();
     User.otp = OTP;
     User.otpTries = 0;
-    User.otpExpires = Date.now() + 30000; // otp will expire after 30 second
+    User.otpExpires = Date.now() + 30000; // OTP will expire after 30 seconds
+    User.otpResendCount = User.otpResendCount ? User.otpResendCount + 1 : 1; // Increment resend count
     await User.save();
     sendOTP(email, OTP);
+
     setTimeout(async () => {
       // Expire OTP after 30 seconds
-      const User = await user.findOneAndUpdate(
+      const expiredUser = await user.findOneAndUpdate(
         { email },
         { otp: null, otpExpires: null }
       );
-      if (!User) {
-        return res.status(404).send({ error: "User not found" });
+      if (!expiredUser) {
+        if (!res.headersSent) {
+          // Check if the response has already been sent before sending another response
+          return res.status(404).send({ error: "User not found" });
+        }
       }
     }, 30000);
-    res.status(201).json({ message: "OTP sent successfully" });
+
+    // Move the response outside the setTimeout callback
+    return res.status(201).json({ message: "OTP sent successfully" });
   } catch (error) {
-    res.status(401).json({ error: error.message });
+    return res.status(401).json({ error: error.message });
   }
 };
+
+// const resendOtp = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) {
+//       return res.status(401).json({ message: "Please provide email" });
+//     }
+//     const User = await user.findOne({ email });
+//     if (!User) {
+//       return res.status(401).json({ message: "Invalid email" });
+//     }
+
+//     // Check if the user has exceeded the maximum resend attempts
+//     if (User.otpResendCount >= 5) {
+//       return res
+//         .status(401)
+//         .json({ message: "Maximum resend attempts exceeded" });
+//     }
+//     User.otpResendCount = User.otpResendCount ? User.otpResendCount + 1 : 1; // Increment resend count
+//     const currentTime = new Date().getTime();
+
+//     // Check if the cooldown period has not passed
+//     if (User.otpCooldown && User.otpCooldown > currentTime) {
+//       const remainingTime = Math.ceil(
+//         (User.otpCooldown - currentTime) / 1000 / 60
+//       );
+//       return res.status(401).json({
+//         // message: `Please wait ${remainingTime} minutes before resending the OTP`,
+//         message: `Please wait 10 minutes before resending the OTP`,
+//       });
+//     }
+
+//     const OTP = generateOTP();
+//     User.otp = OTP;
+//     User.otpTries = 0;
+//     User.otpExpires = Date.now() + 30000; // OTP will expire after 30 seconds
+
+//     User.otpCooldown = currentTime + 10 * 60 * 1000; // Set cooldown period to 10 minutes
+//     await User.save();
+//     sendOTP(email, OTP);
+//     setTimeout(async () => {
+//       // Expire OTP after 30 seconds
+//       const User = await user.findOneAndUpdate(
+//         { email },
+//         { otp: null, otpExpires: null }
+//       );
+//       if (!User) {
+//         return res.status(404).send({ error: "User not found" });
+//       }
+//     }, 30000);
+//     res.status(201).json({ message: "OTP sent successfully" });
+//   } catch (error) {
+//     res.status(401).json({ error: error.message });
+//   }
+// };
+
+// const resendOtp = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) {
+//       return res.status(401).json({ message: "Please provide email" });
+//     }
+//     const User = await user.findOne({ email });
+//     if (!User) {
+//       return res.status(401).json({ message: "Invalid email" });
+//     }
+
+//     // Check if the user has exceeded the maximum resend attempts
+//     if (User.otpResendCount >= 5) {
+//       const currentTime = new Date().getTime();
+//       // Check if the cooldown period has not passed
+//       if (User.otpCooldown && User.otpCooldown > currentTime) {
+//         const remainingTime = Math.ceil(
+//           (User.otpCooldown - currentTime) / 1000 / 60
+//         );
+//         return res.status(401).json({
+//           message: `Please wait ${remainingTime} minutes before resending the OTP`,
+//         });
+//       } else {
+//         // Reset resend count and cooldown period
+//         User.otpResendCount = 0;
+//         User.otpCooldown = null;
+//         await User.save();
+//       }
+//     } else {
+//       // Increment resend count
+//       User.otpResendCount = User.otpResendCount ? User.otpResendCount + 1 : 1;
+//       // Set cooldown period to 5 minutes if it's the first resend attempt
+//       if (User.otpResendCount === 5) {
+//         const currentTime = new Date().getTime();
+//         User.otpCooldown = currentTime + 5 * 60 * 1000;
+//       }
+//       await User.save();
+//     }
+
+//     const currentTime = new Date().getTime();
+//     // Check if the cooldown period has not passed
+//     if (User.otpCooldown && User.otpCooldown > currentTime) {
+//       const remainingTime = Math.ceil(
+//         (User.otpCooldown - currentTime) / 1000 / 60
+//       );
+//       return res.status(401).json({
+//         message: `Please wait ${remainingTime} minutes before resending the OTP`,
+//       });
+//     }
+
+//     const OTP = generateOTP();
+//     User.otp = OTP;
+//     User.otpTries = 0;
+//     User.otpExpires = Date.now() + 30000; // OTP will expire after 30 seconds
+//     User.otpCooldown = currentTime + 10 * 60 * 1000; // Set cooldown period to 10 minutes
+//     await User.save();
+//     sendOTP(email, OTP);
+//     setTimeout(async () => {
+//       // Expire OTP after 30 seconds
+//       const User = await user.findOneAndUpdate(
+//         { email },
+//         { otp: null, otpExpires: null }
+//       );
+//       if (!User) {
+//         return res.status(404).send({ error: "User not found" });
+//       }
+//     }, 30000);
+//     res.status(201).json({ message: "OTP sent successfully" });
+//   } catch (error) {
+//     res.status(401).json({ error: error.message });
+//   }
+// };
 
 const getUser = async (req, res) => {
   try {

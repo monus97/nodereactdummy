@@ -3,9 +3,11 @@ const Item = require("../models/itemModel");
 const getCart = async (req, res) => {
   try {
     const userId = req.user._id;
-    const cart = await Cart.findOne({ userId }).populate(
-      "items.productId",{itemName : 1,images : 1,itemPrice : 1}
-    );
+    const cart = await Cart.findOne({ userId }).populate("items.productId", {
+      itemName: 1,
+      images: 1,
+      itemPrice: 1,
+    });
     if (cart && cart.items.length > 0) {
       res.status(200).send(cart);
     } else {
@@ -79,7 +81,51 @@ const createCart = async (req, res) => {
     });
   }
 };
+
+const removeItemsFromCart = async (req, res) => {
+  const userId = req.user._id;
+  const { productId } = req.body;
+  try {
+    let cart = await Cart.findOne({ userId });
+    const price = await Item.findOne({ _id: productId });
+
+    if (!price) {
+      return res.status(404).send("Item not found");
+    }
+
+    if (cart) {
+      const itemIndex = cart.items.findIndex(
+        (item) => item.productId == productId
+      );
+
+      if (itemIndex > -1) {
+        const quantity = cart.items[itemIndex].quantity;
+
+        if (quantity > 1) {
+          cart.items[itemIndex].quantity = quantity - 1;
+          cart.items[itemIndex].subTotal = (quantity - 1) * price.itemPrice;
+        } else {
+          cart.items.splice(itemIndex, 1); // Remove the item from the cart
+        }
+
+        // Recalculate the total by summing up all the item subtotals
+        cart.total = cart.items.reduce((acc, item) => acc + item.subTotal, 0);
+
+        await cart.save();
+        return res.send(cart);
+      } else {
+        return res.status(404).send("Item not found in the cart");
+      }
+    } else {
+      return res.status(404).send("Cart not found");
+    }
+  } catch (error) {
+    console.error(error.message); // Log the error message
+    return res.status(500).send("An error occurred");
+  }
+};
 module.exports = {
   getCart,
   createCart,
+  removeItemsFromCart,
 };
