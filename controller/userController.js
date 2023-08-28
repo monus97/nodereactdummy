@@ -7,6 +7,7 @@ const { generateOTP, sendOTP } = require("../email/mail");
 const userRegister = async (req, res) => {
   try {
     const newUser = new user(req.body);
+    console.log(req.body)
     if (!newUser.name || !newUser.email || !newUser.password) {
       return res.status(400).json({ message: "Please fill all the fields" });
     }
